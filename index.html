@@ -3,7 +3,9 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Title of the document</title>
+		<title>HomePage</title>
+		<link href="/images/branding/product/ico/googleg_lodp.ico" rel="shortcut icon">
+		
 		<!-- Latest compiled and minified CSS -->
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -17,7 +19,10 @@
 			}
 			.mTop5 { margin-top: 5px; }
 			.mBot5 { margin-bottom: 5px; }
-
+			.bookMarkIcon {
+			    width: 20px;
+			    height: 20px;
+			}
 		</style>
 	</head>
 	<body>
@@ -29,7 +34,7 @@
 			<ul class="nav navbar-nav">
 				<li class="active"><a href="#bookmarks">Bookmarks</a></li>
 				<li><a href="#notes">Notes</a></li>
-				<li><a href="#">Page 2</a></li>
+				<li><a href="#daily">Daily</a></li>
 				<li><a href="#">Page 3</a></li>
 			</ul>
 		</div>
@@ -38,12 +43,12 @@
 		<div class="row">
 			<div class="col col-md-6 col-sm-6 col-xs-1">
 				<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">
-					<span data-toggle="tooltip" title="Add New Bookmark" data-placement="right" >+</span>
+					<span data-toggle="tooltip" title="Add New Bookmark" id="addNewBookmark" data-placement="right" >+</span>
 				</button>
 			</div>
 			<div class="col col-md-6 col-sm-6 col-xs-1 col-xs-push-10 col-md-push-0 col-sm-push-0">
 				<button type="button" data-toggle="tooltip" title="Backup Data" class="btn btn-primary btn-xs" style="float: right;" onclick="javascript:downloadFile();">
-					<i class="material-icons 	tiny" style ="-webkit-transform: scaleY(-1);">backup</i>
+					<i class="material-icons 	" style ="-webkit-transform: scaleY(-1);">backup</i>
 				</button>
 				
 				<input type="checkbox" data-toggle="toggle">
@@ -63,9 +68,8 @@
 		          <h4 class="modal-title">Add New Bookmark</h4>
 		        </div>
 		        <div class="modal-body">
-	        		<form id="signupForm1" class="form-horizontal">
+	        		<form id="newBkForm" class="form-horizontal">
 						<div class="form-group">
-							
 							<div class="col-sm-12">
 								<input type="text" required class="form-control" 
 									id="name" placeholder="Website name" 
@@ -73,15 +77,22 @@
 							</div>
 						</div>
 						<div class="form-group">
-							
 							<div class="col-sm-12">
 								<input type="text" required class="form-control" id="url" placeholder="URL" />
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-sm-12">
+								<input type="text" class="form-control" id="imgURL" placeholder="Icon URL" />
+								<input type="hidden" id="bookmarkId"/>
+								<button class="btn btn-warning btn-xs mTop5" id="getImgURL" data-toggle="tooltip" data-placement="right" title="Get Icon URL. *Still in beta"><span><i class="material-icons" style="font-size:14px">more_horiz</i></span></button>
 							</div>
 						</div>
 					</form>
 		        </div>
 		        <div class="modal-footer">
 		        	<button type="button" class="btn btn-primary" data-dismiss="modal" id="saveItem">Save changes</button>
+		        	<button onclick="clearModalData()" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Clear"><i class="material-icons" style="font-size:18px">clear_all</i></button>
 		        </div>
 		      </div>
 		    </div>
@@ -97,12 +108,34 @@
 		<br>
 		<div class="row">
 			<div class="col-md-6"> 
-				<button class="btn tiny mBot5" onclick="$('#notesList .timestamp').toggle('100');">-</button>
+				<button class="btn mBot5" onclick="$('#notesList .timestamp').toggle('slow');">-</button>
 				<ul id="notesList" class="list-group">
+				</ul>
+			</div>
+			<div class="col-md-6"> 
+				<button class="btn mBot5" onclick="$('#doneNotesList .timestamp').toggle('slow');">-</button>
+				<ul id="doneNotesList" class="list-group">
 				</ul>
 			</div>
 		</div>
 	</div>
+	<div class="container" id="daily">
+		<div class="row">
+			<div class="col-md-6 col-xs-12 input-group input-group-lg">
+				<h2>Daily Greetings</h2>
+				<input type="text" placeholder="Add Sites..." id="dailyItem" class="form-control">
+			</div>
+		</div>
+		<br>
+		<div class="row">
+			<div class="col-md-6"> 
+				<button class="btn mBot5" onclick="$('#dailyList .timestamp').toggle('slow');">-</button>
+				<ul id="dailyList" class="list-group">
+				</ul>
+			</div>
+		</div>
+	</div>
+
 	</body>
 	<!-- jQuery library -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -111,15 +144,6 @@
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 	<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 	<script>
-		/*$('.row').html(function(){
-			return function(){
-				var a = '';
-				for (var i = 0; i < 8; i++) {
-					a += `<br><h1>${i}</h1>`;
-				}
-				return a;
-			}
-		})*/
 
 		var topMenus = $('.nav li');
 		topMenus.on('click',function(){
@@ -131,19 +155,28 @@
 		topMenus.eq('0').trigger('click');
 
 		$('[data-toggle="tooltip"]').tooltip(); 
+
+    	$('#getImgURL').bind('click',function(){
+			$('#imgURL').val(getHostname($('#url').val()) + `/favicon.ico`)
+    	})
 	</script>
 
 	<script>
         const NOTES = 'NOTES';
         const BOOKMARKS = 'BOOKMARKS';
+        const DAILY = 'NOTES';
         const SETTINGS = 'SETTINGS';
+        const STATUS_NOTE_NEW = 'NEW';
+        const STATUS_NOTE_DONE = 'DONE';
+
+		/*Initialization starts*/
         var bookmarks = getAllItemsFromLS(BOOKMARKS);
         bookmarks = bookmarks || [];
         localStorage.setItem(BOOKMARKS,JSON.stringify(bookmarks));
         
         var settingsObj = getDataFromLS(SETTINGS) || {};
         localStorage.setItem(SETTINGS,JSON.stringify(settingsObj));
-        /*Initialization*/
+        /*Initialization ends*/
         
         (function(){
             $('#saveItem').bind('click',saveBookmark);
@@ -160,7 +193,6 @@
                 }
             });
 
-
             $('.appSet').bind('click',function(){
                 $('#settings').toggle();
                 $('#content1').toggle();
@@ -169,49 +201,64 @@
             init();
         })();
         
+        function init(){
+        	populateItems();
+        	refreshNotes();
+            initSettings(settingsObj);
+        }
+
         function addNote(){
 	    	var note = $('#noteItem').val();
 	        var noteObj = {
 	        	type: NOTES,
 	        	note: note,
+	        	status: STATUS_NOTE_NEW,
 	        	createdDt: new Date(),
 	        	actionDt: new Date(),
 	        	id: Date.now()
 	        }
 	        $('#noteItem').val('');
 	        addItem(noteObj);
+	        refreshNotes('Y');
         }
 
         function saveBookmark(){
 	    	var name = $('#name').val();
 	    	var url = $('#url').val();
-	        var bookmarkObj = {
+	    	var imgURL = $('#imgURL').val();
+	    	var id = $('#bookmarkId').val();
+	    	var addEdit =  (!id) ? 'ADD' : '';
+	    	id = (id) ? id : Date.now();
+
+			var bookmarkObj = {
 	        	type: BOOKMARKS,
 	        	name: name,
 	        	url: url,
-	        	id: Date.now()
+	        	imgURL: imgURL,
+	        	id: id,
 	        }
-	        $('#name, #url').val('');
-	        addItem(bookmarkObj);
+	    	if(addEdit)
+	        {
+		        addItem(bookmarkObj);
+	        }else{
+				updateItemInLS(bookmarkObj);
+	        }
+			populateItems();
+	        $('#newBkForm .form-control, #newBkForm input[type="hidden"]#bookmarkId ').val('');
         }
 		
+		function clearModalData(){
+			$('#newBkForm .form-control, #newBkForm input[type="hidden"]#bookmarkId ').val('');	
+		}
 
-        function init(){
-        	populateItems();
-        	refreshNotes();
-            initSettings(settingsObj);
-        }
-        
         function addItem(item){
         	switch(item.type){
         		case BOOKMARKS:
         			addItemInLS(item,BOOKMARKS);
-            		populateItems();	
         		break;
 
         		case NOTES:
         			addItemInLS(item,NOTES);
-        			refreshNotes('Y');
         		break;
         	}
         }
@@ -236,14 +283,20 @@
             var c = getAllItemsFromLS(BOOKMARKS);
             var liItems=``;
             c.forEach(function(item){
-            	var btnX = `<input type="button" onclick="deleteItem($(this),${BOOKMARKS})" class="btn btn-danger btn-xs tiny" style="float: right;" value="X" data-id="${item.id}">`;
+            	var btnX = `<input type="button" onclick="deleteItem($(this),${BOOKMARKS})" class="btn btn-danger btn-xs " style="float: right;" value="X" data-id="${item.id}">`;
+            	var edit = `<button onclick="editBookmark($(this),${BOOKMARKS})" class="btn btn-primary btn-xs " data-id="${item.id}"><i class="material-icons" style="font-size:14px">mode_edit</i></button>`;
+            	var iconHtml = '';
+            	if(item.imgURL){
+            		iconHtml =`<span><img class="bookMarkIcon" src="${item.imgURL}"></img></span>`;		
+            	}
                 liItems = liItems.concat(`
                 	<div class="col col-md-2 col-sm-3 col-xs-3">
 						<div class="panel panel-default">
-						    <div class="panel-heading"> ${btnX}</div>
+						    <div class="panel-heading">${edit} ${btnX}</div>
 						    <div class="panel-body">
 						    	<a href="javascript:window.open('${item.url}','_blank');">
 						    		<div>
+						    			${iconHtml}
 						    			${item.name}
 						    		</div>
 						    	</a>
@@ -266,6 +319,12 @@
             localStorage.setItem(type,JSON.stringify(items));
         }
         
+        function getItemFromLS(id,type){
+        	var items = getAllItemsFromLS(type);
+        	items = items.filter(o => o.id == id);
+        	return items[0];
+        }
+
         function initSettings(settingsObj){
             
         }
@@ -285,6 +344,16 @@
         			refreshNotes();
         		break;
         	}
+        }
+        function editBookmark(curObj,type){
+        	$('#addNewBookmark').trigger('click');
+        	var id = curObj.data('id');
+
+			var item = getItemFromLS(id,type);
+        	$('#name').val(item.name);
+	    	$('#url').val(item.url);
+	    	$('#imgURL').val(item.imgURL);
+	    	$('#bookmarkId').val(item.id);
         }
 
         function downloadFile(){
@@ -310,49 +379,98 @@
 
 		function refreshNotes(animate){
 			var contnr = $('#notesList');
+			var doneContnr = $('#doneNotesList');
             var c = getAllItemsFromLS(NOTES);
             var liItems=``;
-            var cl = ['list-group-item-success','list-group-item-danger','list-group-item-warning','list-group-item-info'];
+            var doneLiItems=``;
+            var clsLst = ['list-group-item-success','list-group-item-danger','list-group-item-warning','list-group-item-info'];
             c.forEach(function(item,i){
             	i = (i > c.length-1) ? i - c.length-1 : i;
-            	var btnX = `<input type="button" onclick="deleteItem($(this),${NOTES})" class="btn btn-danger btn-xs tiny" style="float: right;" value="X" data-id="${item.id}">`;
-                liItems = liItems.concat(`<li class="list-group-item ${cl[i]}">
-                	<div class="d-flex w-100 justify-content-between">
-				      <strong class="mb-1">${item.note}  ${btnX}</strong>
-				    </div>
-				    <em class="timestamp">${new Date(item.actionDt).toLocaleString('en-IN')}</em>  
-                	</li>`);
+            	var btnX = `<input type="button" onclick="deleteItem($(this),${NOTES})" class="btn btn-danger btn-xs" style="float: right;" value="X" data-id="${item.id}">`;
+            	var markDoneBtn = `<button onclick="markNoteAs($(this),STATUS_NOTE_DONE)" class="btn btn-primary btn-xs" style="float: right;" data-id="${item.id}" data-toggle="tooltip" title="Mark as done">
+            							<span style="margin:0px">
+            								<i class="material-icons" style="font-size:14px;padding:0px;">done</i>
+        								</span>
+    								</button>`;
+            	var undoBtn = `<button onclick="markNoteAs($(this),STATUS_NOTE_NEW)" class="btn btn-warning btn-xs" style="float: right;" data-id="${item.id}" data-toggle="tooltip" title="Undo">
+            						<span style="margin:0px">
+            							<i class="material-icons" style="font-size:14px;padding:0px;">undo</i>
+        							</span>
+    							</button>`;
+            	var btnOpt = (isNoteNew(item)) ? markDoneBtn : undoBtn;
+
+            	var noteTemplate = `<li class="list-group-item ${clsLst[i]}" data-id="${item.id}">
+					                	<div class="d-flex w-100 justify-content-between">
+									      	<strong class="mb-1" onclick="editNote($(this));">${item.note} </strong>${btnOpt} ${btnX}
+									    </div>
+									    <em class="timestamp">${new Date(item.actionDt).toLocaleString('en-IN')}</em>  
+				                	</li>`;
+				if(isNoteNew(item)){
+					liItems = liItems.concat(noteTemplate);	
+				}
+				if(!isNoteNew(item)){
+					doneLiItems = doneLiItems.concat(noteTemplate);
+				}
             });
             contnr.html(liItems);
+            doneContnr.html(doneLiItems);
             if(animate){
             	$('#notesList li:last').hide().appendTo('#notesList').slideDown();	
             }
         }
 
-function trigger_notification()
-            {
-                //check if browser supports notification API
-                if("Notification" in window)
-                {
-                    if(Notification.permission == "granted")
-                    {
-                        var notification = new Notification("Notification Title", {"body":"Message Body", "icon":"http://qnimate.com/wp-content/uploads/2014/07/web-notification-api-300x150.jpg"});
-                    }
-                    else
-                    {
-                        Notification.requestPermission(function (permission) {
-                            if (permission === "granted") 
-                            {
-                                var notification = new Notification("Notification Title", {"body":"Message Body", "icon":"http://qnimate.com/wp-content/uploads/2014/07/web-notification-api-300x150.jpg"});
-                            }
-                        });
-                    }
-                }   
-                else
-                {
-                    alert("Your browser doesn't support notfication API");
-                }       
-            }
+        function editNote(currObj){
+        	var parentObj = currObj.parent();
+        	var text = currObj.text();
+        	currObj.parent().children().hide();
+        	var editTemplate = `<input type="text" id="dynEditNote" class="form-control" value="${text}" autofocus="autofocus">`;
+        	parentObj.append(editTemplate);
+        	$('#dynEditNote').on('keyup',event => saveDynNote(event,$('#dynEditNote')));
+        }
+
+        function saveDynNote(event,currObj){
+        	if(event.keyCode == 13){
+        		var id = currObj.closest('li').data('id');
+	        	var item = getItemFromLS(id,NOTES);
+	        	item.note = currObj.val();
+	        	actionDt: new Date(),
+	        	updateItemInLS(item);
+	        	refreshNotes();
+        	}else if(event.keyCode == 27){
+        		currObj.parent().children().show();
+        		$('#dynEditNote').remove();
+        	}
+
+        }
+
+        function isNoteNew(item){
+        	if(item.status == STATUS_NOTE_NEW || item.status == undefined){
+        		return true;
+        	}
+        	if(item.status == STATUS_NOTE_DONE){
+        		return false;
+        	}
+        }
+
+        function getHostname(url){
+        	var a = document.createElement("a");
+        	a.href = url;
+        	return a.protocol +'//'+ a.hostname;
+        }
+
+        function markNoteAs(curObj,status){
+        	var id = curObj.data('id');
+        	var item = getItemFromLS(id,NOTES);
+        	item.status = status;
+        	updateItemInLS(item);
+        	refreshNotes();
+        }
+
+        function updateItemInLS(item){
+        	removeItemFromLS(item.id,item.type);
+        	addItemInLS(item,item.type);
+        }
+
     </script>
 </html>
 
